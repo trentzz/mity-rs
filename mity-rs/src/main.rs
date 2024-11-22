@@ -284,9 +284,9 @@ fn cli_commands() {
         .arg(vcfanno_config.clone())
         .arg(report_config_arg.clone());
 
-    let matches = Command::new("mity")
+    let matches = Command::new("mity-rs")
         .version("1.0")
-        .about("Mity: Mitochondrial variant analysis toolkit in rust")
+        .about("Mity RS: Mitochondrial variant analysis toolkit in rust")
         .subcommand_required(true)
         .arg_required_else_help(true)
         .subcommand(call_command)

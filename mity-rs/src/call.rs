@@ -5,6 +5,8 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 
+use crate::mity_util;
+
 pub struct Call {
     debug: bool,
     files: Vec<String>,
@@ -109,7 +111,7 @@ impl Call {
         if self.normalise {
             self.run_normalise()?;
         } else {
-            self.tabix(&self.call_vcf_path)?;
+            mity_util::tabix(&self.call_vcf_path)?;
         }
 
         Ok(())
@@ -221,17 +223,12 @@ impl Call {
     }
 
     fn bam_get_mt_contig(&self, bam: &str) -> Result<String, Box<dyn Error>> {
+        info!("Not implemented yet!");
         Ok("chrM:1-16569".to_string())
     }
 
-    fn tabix(&self, file: &str) -> Result<(), Box<dyn Error>> {
-        // Simulate tabix
-        info!("Running tabix on {}", file);
-        Ok(())
-    }
-
     fn run_normalise(&self) -> Result<(), Box<dyn Error>> {
-        info!("Normalising and filtering variants");
+        info!("Not implemented yet!");
         Ok(())
     }
 

@@ -7,6 +7,7 @@ use std::process::Command;
 
 /// Get the directory path of the Mity library.
 pub fn get_mity_dir() -> Result<PathBuf> {
+    // TODO: change this
     let module_path = std::env::var("CARGO_MANIFEST_DIR")?;
     let path = Path::new(&module_path).join("mitylib");
     Ok(path)
