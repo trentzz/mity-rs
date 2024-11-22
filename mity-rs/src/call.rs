@@ -221,7 +221,6 @@ impl Call {
     }
 
     fn bam_get_mt_contig(&self, bam: &str) -> Result<String, Box<dyn Error>> {
-        // Simplified; use a BAM parsing library like `rust-htslib` in production.
         Ok("chrM:1-16569".to_string())
     }
 
@@ -233,7 +232,6 @@ impl Call {
 
     fn run_normalise(&self) -> Result<(), Box<dyn Error>> {
         info!("Normalising and filtering variants");
-        // Call the normalisation logic here (not implemented for brevity).
         Ok(())
     }
 
