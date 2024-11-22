@@ -1,4 +1,79 @@
+mod call;
+mod mity_util;
+
+use call::Call;
 use clap::{Arg, ArgAction, Command};
+
+fn handle_call_command(call_matches: &clap::ArgMatches) {
+    let debug = call_matches.get_flag("debug");
+    let files = call_matches
+        .get_many::<String>("files")
+        .expect("Required argument")
+        .map(|s| s.to_string())
+        .collect();
+    let reference = call_matches
+        .get_one::<String>("reference")
+        .expect("Required argument")
+        .to_string();
+    let prefix = call_matches
+        .get_one::<String>("prefix")
+        .map(|s| s.to_string());
+    let min_mq = call_matches
+        .get_one::<String>("min-mapping-quality")
+        .map(|v| v.parse().expect("Invalid integer for min-mapping-quality"));
+    let min_bq = call_matches
+        .get_one::<String>("min-base-quality")
+        .map(|v| v.parse().expect("Invalid integer for min-base-quality"));
+    let min_af = call_matches
+        .get_one::<String>("min-alternate-fraction")
+        .map(|v| v.parse().expect("Invalid float for min-alternate-fraction"));
+    let min_ac = call_matches
+        .get_one::<String>("min-alternate-count")
+        .map(|v| v.parse().expect("Invalid integer for min-alternate-count"));
+    let p_val = call_matches
+        .get_one::<String>("p")
+        .map(|v| v.parse().expect("Invalid float for p"));
+    let output_dir = call_matches
+        .get_one::<String>("output-dir")
+        .expect("Required argument")
+        .to_string();
+    let region = call_matches
+        .get_one::<String>("region")
+        .map(|s| s.to_string());
+    let bam_file_list = call_matches.get_flag("bam-file-list");
+    let keep = call_matches.get_flag("keep");
+    let normalise = call_matches.get_flag("normalise");
+
+    // Create the Call struct using the new constructor
+    let mut call = Call::new(
+        debug,
+        files,
+        reference,
+        None, // genome not provided in arguments
+        prefix,
+        min_mq,
+        min_bq,
+        min_af,
+        min_ac,
+        p_val,
+        normalise,
+        output_dir,
+        region,
+        bam_file_list,
+        keep,
+    );
+
+    // TODO: think of better semantics for error handling and logging
+    match call.run() {
+        Ok(()) => {
+            println!("Call command completed successfully.");
+        }
+        Err(e) => {
+            eprintln!("Error executing call command: {}", e);
+            std::process::exit(1);
+        }
+    }
+}
 
 fn cli_commands() {
     // Reused args
@@ -223,7 +298,7 @@ fn cli_commands() {
 
     match matches.subcommand() {
         Some(("call", call_matches)) => {
-            // Handle the 'call' subcommand
+            handle_call_command(call_matches);
             println!("{:?}", call_matches);
         }
         Some(("normalise", normalise_matches)) => {
