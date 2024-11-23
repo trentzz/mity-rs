@@ -1,5 +1,4 @@
 use crate::mity_util::{self, select_reference_fasta, select_reference_genome};
-use std::path::Path;
 use std::process::Command;
 use std::thread;
 

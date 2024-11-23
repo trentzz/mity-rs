@@ -1,7 +1,5 @@
 use log::{debug, error, info, LevelFilter};
 use noodles::bam;
-use noodles::vcf;
-use noodles::vcf::header;
 use simple_logger;
 use std::error::Error;
 use std::fs;
