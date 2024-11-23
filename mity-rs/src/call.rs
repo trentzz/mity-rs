@@ -225,7 +225,7 @@ impl Call {
             .files
             .iter()
             .filter_map(|file| {
-                if self.bam_has_rg(file).is_ok() {
+                if self.bam_has_rg(file).is_err() {
                     Some(file.clone()) // Add the file to the list if it doesn't pass
                 } else {
                     None // Skip files that pass the check
