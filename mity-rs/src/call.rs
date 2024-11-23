@@ -305,7 +305,6 @@ impl Call {
         // Return the result as a string if `as_string` is true
         if let Some((name, length)) = res {
             let result = format!("{}:1-{}", name, length);
-            println!("bam_get_mt_contig: {}", result.to_string());
             return Ok(result);
         }
 
@@ -339,9 +338,5 @@ impl Call {
 
         // Create the sed_cmd
         self.sed_cmd = format!("sed 's/^##phasing=none/{}/g'", self.mity_cmd);
-
-        // Log debug information
-        println!("Debug mity_cmd: {}", self.mity_cmd);
-        println!("Debug sed_cmd: {}", self.sed_cmd);
     }
 }
