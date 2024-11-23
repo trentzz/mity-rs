@@ -1,6 +1,7 @@
 use log::{debug, error, info, LevelFilter};
 use noodles::bam;
 use noodles::vcf;
+use noodles::vcf::header;
 use simple_logger;
 use std::error::Error;
 use std::fs;
@@ -124,7 +125,7 @@ impl Call {
             "set -o pipefail && freebayes -f {} {} --min-mapping-quality {} \
             --min-base-quality {} --min-alternate-fraction {} --min-alternate-count {} \
             --ploidy 2 --region {} | sed 's/##source/##freebayesSource/' | sed \
-            's/##commandline/##freebayesCommandline/' | {} | bgzip > {}",
+            's/##commandline/##freebayesCommandline/' | bgzip > {}",
             self.reference,
             self.file_string,
             self.min_mq,
@@ -132,7 +133,6 @@ impl Call {
             self.min_af,
             self.min_ac,
             self.region.as_deref().unwrap_or(""),
-            self.sed_cmd,
             self.call_vcf_path,
         );
 
@@ -270,10 +270,9 @@ impl Call {
         let mut reader = bam::io::reader::Builder::default().build_from_path(bam)?;
 
         // Get the list of chromosomes (SQ records)
-        let chroms: Vec<String> = reader
-            .read_header()
-            .unwrap()
-            .reference_sequences()
+        let header = reader.read_header().unwrap();
+        let header_referece_sequences = header.reference_sequences();
+        let chroms: Vec<String> = header_referece_sequences
             .iter()
             .map(|seq| seq.0.to_string())
             .collect();
@@ -296,7 +295,7 @@ impl Call {
         let mut res: Option<(String, usize)> = None;
 
         // Find the corresponding sequence record for the mitochondrial contig
-        for seq in reader.read_header().unwrap().reference_sequences() {
+        for seq in header_referece_sequences {
             if seq.0.to_string() == mito_contig_name {
                 res = Some((seq.0.to_string(), seq.1.length().get()));
                 break;
@@ -321,11 +320,28 @@ impl Call {
     }
 
     fn set_mity_cmd(&mut self) {
-        self.mity_cmd = format!(
-            "##mityCommandline=\"mity call --reference {} --prefix {} ...\"",
+        // TODO: this feels like a dumb way to do things
+        let mut mity_cmd = format!(
+            r#"##mityCommandline="mity call --reference {} --prefix {} --min-mapping-quality {} \
+--min-base-quality {} --min-alternate-fraction {} --min-alternate-count {} --out-folder-path {}"#,
             self.reference,
-            self.prefix.as_ref().unwrap_or(&String::new())
+            self.prefix.as_ref().unwrap(),
+            self.min_mq,
+            self.min_bq,
+            self.min_af,
+            self.min_ac,
+            self.output_dir,
         );
+
+        // Finalize the command
+        mity_cmd.push('"');
+        self.mity_cmd = mity_cmd.replace("/", "\\/");
+
+        // Create the sed_cmd
         self.sed_cmd = format!("sed 's/^##phasing=none/{}/g'", self.mity_cmd);
+
+        // Log debug information
+        println!("Debug mity_cmd: {}", self.mity_cmd);
+        println!("Debug sed_cmd: {}", self.sed_cmd);
     }
 }
