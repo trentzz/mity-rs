@@ -1,4 +1,6 @@
 use log::{debug, error, info, LevelFilter};
+use noodles::bam;
+use noodles::vcf;
 use simple_logger;
 use std::error::Error;
 use std::fs;
@@ -219,12 +221,98 @@ impl Call {
             }
         }
 
+        let invalid_files: Vec<String> = self
+            .files
+            .iter()
+            .filter_map(|file| {
+                if self.bam_has_rg(file).is_ok() {
+                    Some(file.clone()) // Add the file to the list if it doesn't pass
+                } else {
+                    None // Skip files that pass the check
+                }
+            })
+            .collect();
+
+        if invalid_files.len() != 0 {
+            let invalid_files_string = invalid_files.join(", ");
+            return Err(format!(
+                "The BAM/CRAM files: {} lack an @RG header",
+                invalid_files_string
+            )
+            .into());
+        }
+
         Ok(())
     }
 
+    fn bam_has_rg(&self, bam: &str) -> Result<(), Box<dyn Error>> {
+        // Create a reader for the BAM file
+        let mut reader = bam::io::reader::Builder::default().build_from_path(bam)?;
+
+        // Retrieve the read groups from the BAM file header
+        let header = reader.read_header().unwrap();
+        let read_groups = header.read_groups();
+
+        // Check if there are any read groups
+        if read_groups.is_empty() {
+            // Return an error if no read groups are found
+            Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "No read groups found in BAM file",
+            )))
+        } else {
+            // Return Ok if read groups are found
+            Ok(())
+        }
+    }
+
     fn bam_get_mt_contig(&self, bam: &str) -> Result<String, Box<dyn Error>> {
-        info!("Not implemented yet!");
-        Ok("chrM:1-16569".to_string())
+        let mut reader = bam::io::reader::Builder::default().build_from_path(bam)?;
+
+        // Get the list of chromosomes (SQ records)
+        let chroms: Vec<String> = reader
+            .read_header()
+            .unwrap()
+            .reference_sequences()
+            .iter()
+            .map(|seq| seq.0.to_string())
+            .collect();
+
+        // Find intersection with mitochondrial contigs
+        let mito_contig: Vec<_> = chroms
+            .iter()
+            .filter(|&&ref seq| seq == "MT" || seq == "chrM")
+            .collect();
+
+        // Ensure exactly one mitochondrial contig is found
+        if mito_contig.len() != 1 {
+            return Err(
+                "Mitochondrial contig not found or multiple mitochondrial contigs found.".into(),
+            );
+        }
+
+        // Extract the mitochondrial contig name and length
+        let mito_contig_name = mito_contig[0].clone();
+        let mut res: Option<(String, usize)> = None;
+
+        // Find the corresponding sequence record for the mitochondrial contig
+        for seq in reader.read_header().unwrap().reference_sequences() {
+            if seq.0.to_string() == mito_contig_name {
+                res = Some((seq.0.to_string(), seq.1.length().get()));
+                break;
+            }
+        }
+
+        // Return the result as a string if `as_string` is true
+        if let Some((name, length)) = res {
+            let result = format!("{}:1-{}", name, length);
+            println!("bam_get_mt_contig: {}", result.to_string());
+            return Ok(result);
+        }
+
+        return Err(
+            "Mitochondrial contig not found or multiple mitochondrial contigs found.".into(),
+        );
     }
 
     fn run_normalise(&self) -> Result<(), Box<dyn Error>> {
