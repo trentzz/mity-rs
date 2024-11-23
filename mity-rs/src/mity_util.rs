@@ -2,15 +2,15 @@ use anyhow::{Context, Result};
 use glob::glob;
 use log::debug;
 use noodles::vcf;
+use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 /// Get the directory path of the Mity library.
 pub fn get_mity_dir() -> Result<PathBuf> {
-    // TODO: change this
-    let module_path = std::env::var("CARGO_MANIFEST_DIR")?;
-    let path = Path::new(&module_path).join("mitylib");
-    Ok(path)
+    let base_dir = env!("CARGO_MANIFEST_DIR");
+    let file_path = Path::new(base_dir).join("assets");
+    Ok(file_path)
 }
 
 /// Generate a tabix index for a bgzipped file.
@@ -36,7 +36,7 @@ pub fn select_reference_fasta(
         }
     }
     let ref_dir = get_mity_dir()?.join("reference");
-    let pattern = format!("{}/{}.fa", ref_dir.display(), reference);
+    let pattern = format!("{}/{}*.fa", ref_dir.display(), reference);
     let files: Vec<_> = glob(&pattern)?.collect();
     debug!("{:?}", files);
     if files.len() != 1 {

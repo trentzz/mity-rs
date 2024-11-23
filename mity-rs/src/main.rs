@@ -1,4 +1,5 @@
 mod call;
+mod check;
 mod mity_util;
 
 use call::Call;
@@ -13,43 +14,37 @@ fn handle_call_command(call_matches: &clap::ArgMatches) {
         .collect();
     let reference = call_matches
         .get_one::<String>("reference")
-        .expect("Required argument")
-        .to_string();
+        .expect("Required argument");
     let prefix = call_matches
         .get_one::<String>("prefix")
         .map(|s| s.to_string());
-    let min_mq = call_matches
-        .get_one::<String>("min-mapping-quality")
-        .map(|v| v.parse().expect("Invalid integer for min-mapping-quality"));
-    let min_bq = call_matches
-        .get_one::<String>("min-base-quality")
-        .map(|v| v.parse().expect("Invalid integer for min-base-quality"));
+    let min_mq = call_matches.get_one::<u32>("min_mapping_quality").copied();
+    let min_bq = call_matches.get_one::<u32>("min_base_quality").copied();
     let min_af = call_matches
-        .get_one::<String>("min-alternate-fraction")
-        .map(|v| v.parse().expect("Invalid float for min-alternate-fraction"));
-    let min_ac = call_matches
-        .get_one::<String>("min-alternate-count")
-        .map(|v| v.parse().expect("Invalid integer for min-alternate-count"));
-    let p_val = call_matches
-        .get_one::<String>("p")
-        .map(|v| v.parse().expect("Invalid float for p"));
+        .get_one::<f32>("min_alternate_fraction")
+        .copied();
+    let min_ac = call_matches.get_one::<u32>("min_alternate_count").copied();
+    let p_val = call_matches.get_one::<f32>("p").copied();
     let output_dir = call_matches
-        .get_one::<String>("output-dir")
+        .get_one::<String>("output_dir")
         .expect("Required argument")
         .to_string();
     let region = call_matches
         .get_one::<String>("region")
         .map(|s| s.to_string());
-    let bam_file_list = call_matches.get_flag("bam-file-list");
+    let bam_file_list = call_matches.get_flag("bam_file_list");
     let keep = call_matches.get_flag("keep");
     let normalise = call_matches.get_flag("normalise");
+
+    let reference_fasta = mity_util::select_reference_fasta(reference, None).unwrap();
+    let reference_genome = mity_util::select_reference_genome(reference, None).unwrap();
 
     // Create the Call struct using the new constructor
     let mut call = Call::new(
         debug,
         files,
-        reference,
-        None, // genome not provided in arguments
+        reference_fasta,
+        Some(reference_genome),
         prefix,
         min_mq,
         min_bq,
@@ -136,7 +131,7 @@ fn cli_commands() {
         .long("min-alternate-fraction")
         .help("Require at least this fraction of observations supporting an alternate allele. Default: 0.01")
         .default_value("0.01")
-        .value_parser(clap::value_parser!(f64));
+        .value_parser(clap::value_parser!(f32));
 
     let min_alternate_count_arg = Arg::new("min_alternate_count")
         .long("min-alternate-count")
@@ -148,7 +143,7 @@ fn cli_commands() {
         .long("p")
         .help("Minimum noise level for calculating QUAL score. Default: 0.002")
         .default_value("0.002")
-        .value_parser(clap::value_parser!(f64));
+        .value_parser(clap::value_parser!(f32));
 
     let region_arg = Arg::new("region")
         .long("region")
@@ -284,6 +279,9 @@ fn cli_commands() {
         .arg(vcfanno_config.clone())
         .arg(report_config_arg.clone());
 
+    let check_command =
+        Command::new("check").about("Run runtime checks for mity-rs dependencies and features");
+
     let matches = Command::new("mity-rs")
         .version("1.0")
         .about("Mity RS: Mitochondrial variant analysis toolkit in rust")
@@ -294,28 +292,35 @@ fn cli_commands() {
         .subcommand(report_command)
         .subcommand(merge_command)
         .subcommand(runall_command)
+        .subcommand(check_command)
         .get_matches();
 
     match matches.subcommand() {
         Some(("call", call_matches)) => {
             handle_call_command(call_matches);
-            println!("{:?}", call_matches);
         }
         Some(("normalise", normalise_matches)) => {
             // Handle the 'normalise' subcommand
+            println!("Not implemented yet!");
             println!("{:?}", normalise_matches);
         }
         Some(("report", report_matches)) => {
             // Handle the 'normalise' subcommand
+            println!("Not implemented yet!");
             println!("{:?}", report_matches);
         }
         Some(("merge", merge_matches)) => {
             // Handle the 'normalise' subcommand
+            println!("Not implemented yet!");
             println!("{:?}", merge_matches);
         }
         Some(("runall", runall_matches)) => {
             // Handle the 'normalise' subcommand
+            println!("Not implemented yet!");
             println!("{:?}", runall_matches);
+        }
+        Some(("check", _)) => {
+            check::mity_check();
         }
         _ => unreachable!(),
     }
