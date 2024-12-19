@@ -1,8 +1,14 @@
-mod call;
 mod check;
 mod mity_util;
 
+mod call;
+mod normalise;
+mod report;
+mod merge;
+mod runall;
+
 use call::Call;
+use normalise::Normalise;
 use clap::{Arg, ArgAction, Command};
 
 fn handle_call_command(call_matches: &clap::ArgMatches) {
@@ -69,6 +75,60 @@ fn handle_call_command(call_matches: &clap::ArgMatches) {
         }
     }
 }
+
+fn handle_normalise_command(normalise_matches: &clap::ArgMatches) {
+    // Extract and parse command-line arguments
+    let debug = normalise_matches.get_flag("debug");
+    let vcf = normalise_matches
+        .get_one::<String>("vcf")
+        .expect("Required argument 'vcf' is missing")
+        .to_string();
+    let reference = normalise_matches
+        .get_one::<String>("reference")
+        .expect("Required argument 'reference' is missing")
+        .to_string();
+    let output_dir = normalise_matches
+        .get_one::<String>("output_dir")
+        .expect("Required argument 'output_dir' is missing")
+        .to_string();
+    let prefix = normalise_matches
+        .get_one::<String>("prefix")
+        .map(|s| s.to_string());
+    let allsamples = normalise_matches.get_flag("allsamples");
+    let p_val = normalise_matches.get_one::<f32>("p").unwrap().clone();
+    let keep = normalise_matches.get_flag("keep");
+
+    // Select reference files using utility functions
+    let reference_fasta = mity_util::select_reference_fasta(&reference, None)
+        .expect("Failed to select reference FASTA");
+    let reference_genome = mity_util::select_reference_genome(&reference, None)
+        .expect("Failed to select reference genome");
+
+    // Create the Normalise struct using the constructor
+    let normalise = Normalise::new(
+        debug,
+        vcf,
+        reference_fasta,
+        reference_genome,
+        output_dir,
+        prefix,
+        allsamples,
+        keep,
+        p_val,
+    );
+
+    // Execute the normalization process and handle any potential errors
+    match normalise.run() {
+        Ok(()) => {
+            println!("Normalisation command completed successfully.");
+        }
+        Err(e) => {
+            eprintln!("Error executing normalisation command: {}", e);
+            std::process::exit(1);
+        }
+    }
+}
+
 
 fn cli_commands() {
     // Reused args
@@ -300,9 +360,7 @@ fn cli_commands() {
             handle_call_command(call_matches);
         }
         Some(("normalise", normalise_matches)) => {
-            // Handle the 'normalise' subcommand
-            println!("Not implemented yet!");
-            println!("{:?}", normalise_matches);
+            handle_normalise_command(normalise_matches);
         }
         Some(("report", report_matches)) => {
             // Handle the 'normalise' subcommand

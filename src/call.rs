@@ -7,6 +7,7 @@ use std::path::Path;
 use std::process::Command;
 
 use crate::mity_util;
+use crate::normalise;
 
 pub struct Call {
     debug: bool,
@@ -210,7 +211,7 @@ impl Call {
         }
 
         if self.normalise && self.genome.is_none() {
-            return Err("A genome file should be supplied if mity call normalize=True".into());
+            return Err("A genome file should be supplied if mity call normalise=True".into());
         }
 
         for file in &self.files {
@@ -312,7 +313,26 @@ impl Call {
     }
 
     fn run_normalise(&self) -> Result<(), Box<dyn Error>> {
-        info!("Not implemented yet!");
+        let normalise_runner = normalise::Normalise::new(
+            self.debug,
+            self.call_vcf_path.clone(),
+            self.reference.clone(),
+            self.genome.as_ref().unwrap().clone(),
+            self.output_dir.clone(),
+            self.prefix.clone(),
+            false,
+            self.keep,
+            self.p
+        );
+        match normalise_runner.run() {
+            Ok(()) => {
+                println!("Normalisation command completed successfully.");
+            }
+            Err(e) => {
+                eprintln!("Error executing normalisation command: {}", e);
+                std::process::exit(1);
+            }
+        }
         Ok(())
     }
 
